@@ -6,6 +6,8 @@ import com.menotifilho.desafio_api_pagamentos.exception.UserNotFoundException;
 import com.menotifilho.desafio_api_pagamentos.model.User;
 import com.menotifilho.desafio_api_pagamentos.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +27,14 @@ public class TransferService {
         if (transferDTO.value().compareTo(BigDecimal.ZERO) <= 0) {
             throw new TransferNotAllowedException("Valor da transferência deve ser maior do que 0.0");
         }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User userAuthenticated = (User) authentication.getPrincipal();
+
+        if (!userAuthenticated.getId().equals(transferDTO.payerId())){
+            throw new TransferNotAllowedException("Você não tem permissão para realizar transferências desta conta.");
+        }
+
         User payer = userRepository.findById(transferDTO.payerId()).orElseThrow(() -> new UserNotFoundException("Pagador não encontrado"));
         User payee = userRepository.findById(transferDTO.payeeId()).orElseThrow(() -> new UserNotFoundException("Recebedor não encontrado"));
         if (payer.getId().equals(payee.getId())) {

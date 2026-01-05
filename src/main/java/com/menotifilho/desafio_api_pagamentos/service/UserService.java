@@ -7,17 +7,23 @@ import com.menotifilho.desafio_api_pagamentos.exception.UserNotFoundException;
 import com.menotifilho.desafio_api_pagamentos.model.User;
 import com.menotifilho.desafio_api_pagamentos.model.Wallet;
 import com.menotifilho.desafio_api_pagamentos.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User createUser(UserDTO userDTO) {
@@ -28,13 +34,15 @@ public class UserService {
             throw new DataAlreadyExistsException("Email já cadastrado na base de dados.");
         }
 
+        String encryptedPassword = passwordEncoder.encode(userDTO.password());
+
         Wallet newWallet = new Wallet(userDTO.balance());
 
         User newUser = new User(
                 userDTO.name(),
                 userDTO.cpf(),
                 userDTO.email(),
-                userDTO.password(),
+                encryptedPassword,
                 newWallet
         );
 
@@ -52,5 +60,11 @@ public class UserService {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
 
         return new UserResponseDTO(user);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findUserByEmail(username)
+                .orElseThrow(()-> new UsernameNotFoundException("Usuário não encontrado"));
     }
 }

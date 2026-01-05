@@ -1,4 +1,4 @@
-package com.menotifilho.desafio_api_pagamentos;
+package com.menotifilho.desafio_api_pagamentos.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
